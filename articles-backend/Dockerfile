@@ -1,45 +1,32 @@
-# Base PHP image
 FROM php:8.2-fpm
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libzip-dev \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    curl \
-    nginx \
-    supervisor
-
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql mbstring zip exif pcntl
+    git unzip libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www
+WORKDIR /var/www/html
 
-# Copy application
+# Copy only composer files first (IMPORTANT for caching)
+COPY composer.json composer.lock ./
+
+# Install dependencies (production only)
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader
+
+# Copy rest of the application
 COPY . .
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Permissions
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Fix permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 775 storage bootstrap/cache
+EXPOSE 8000
 
-# Copy nginx config
-COPY ./docker/nginx.conf /etc/nginx/nginx.conf
-
-# Copy supervisor config
-COPY ./docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Expose port
-EXPOSE 80
-
-# Start services
-CMD ["/usr/bin/supervisord"]
+CMD php artisan serve --host=0.0.0.0 --port=8000
