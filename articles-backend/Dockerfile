@@ -26,7 +26,10 @@ RUN composer install \
     --optimize-autoloader
 
 # Permissions
-RUN chown -R www-data:www-data storage bootstrap/cache
+# Create required Laravel directories
+RUN mkdir -p storage bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
 
 EXPOSE 8000
 
