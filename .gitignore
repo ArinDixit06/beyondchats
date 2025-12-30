@@ -1,0 +1,16 @@
+# Ignore ALL node_modules everywhere
+node_modules/
+**/node_modules/
+
+# Ignore env files
+.env
+.env.*
+
+# Ignore builds
+build/
+dist/
+
+# Laravel
+vendor/
+storage/
+bootstrap/cache/
